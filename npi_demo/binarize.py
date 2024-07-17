@@ -3,6 +3,10 @@
 
 import numpy as np
 import cv2
+from pathlib import Path
+import torch
+from torchvision.io import read_image, ImageReadMode
+from torchvision import transforms
 
 from npi_demo.helper.helper_bin import (
     image_correction,
@@ -10,7 +14,10 @@ from npi_demo.helper.helper_bin import (
     normalize_image,
     binarize_bradley,
     resize_image,
-    convert_to_binary
+    convert_to_binary,
+    split_image,
+    pad_image,
+    save_binary_image
 )
 
 class Binarization:
@@ -27,7 +34,49 @@ class Binarization:
         lab_coeffs = lab_coeffs / np.sum(lab_coeffs)
         self.lab_coeffs = lab_coeffs
 
-        self.rs_length = params.get("rs_length", 48)
+        rs_length = params.get("rs_length", 48)
+        split_length = params.get("split_length", 48*4)
+
+        self.rs_length = rs_length
+        self.split_length = split_length
+        self.axis = 0
+        
+        # Transformations:
+        self.torch_resize = transforms.Resize((rs_length, split_length))
+
+
+    def load_as_torch(self, img_filepath):
+        """Loads an image file from the file path and sets it up as a tensor input.
+        For reference only.
+        """
+
+        img = read_image(img_filepath, ImageReadMode.GRAY)
+        if (img.shape[-2], img.shape[-1]) != (self.rs_length, self.split_length):
+            img = self.torch_resize(img)
+         
+        return img # 1, H, W
+
+
+    def load_and_save(self, img_filepath, save_folderpath, label=0):
+        """Loads a line of image text. Segments the image and saves each cut image.
+        Attaches the label and the segment number. If handwritten, label = 1.
+        Otherwise, label = 0.
+        """
+
+        # Load and binarize:
+        img_pp, img_bin = self.process_and_binarize(img_filepath)
+
+        # Split and pad images:
+        pad_imgs = self.split_text_line(img_pp, img_bin)
+        basename = Path(img_filepath).stem
+        for i, pad_img in enumerate(pad_imgs):
+            frac = np.count_nonzero(pad_img)
+            if frac == 0:
+                continue
+            filepath = Path(save_folderpath) / f"{basename}_{i:02d}_{label}.png"
+            save_binary_image(filepath, pad_img)
+        
+        return pad_imgs
 
 
     def process_and_binarize(self, img_filepath):
@@ -52,6 +101,18 @@ class Binarization:
         img_bin_rs = br.binarize_simple(img_bin_rs)
 
         return img_rs, img_bin_rs
+    
+    
+    def split_text_line(self, img_pp, img_bin):
+        """Splits the pre-processed image using the binary image into
+        fixed-length input images to train a model.
+        """
+
+        w = self.split_length
+        images = split_image(img_pp, img_bin, w, axis=0)
+        pad_images = [pad_image(x, w, axis=self.axis) for x in images]
+
+        return pad_images
     
 
     def preprocess(self, img):

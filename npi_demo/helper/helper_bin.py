@@ -136,7 +136,7 @@ def convert_to_binary(img_bw, thr=128):
     foreground by taking minority colour. Foreground is labelled 1 and
     background is labelled 0.
     """
-    
+
     img_bin = img_bw < thr
     frac = np.count_nonzero(img_bin) / img_bin.size
     # Get inverse if True is majority (ensure text is foreground):
@@ -144,3 +144,118 @@ def convert_to_binary(img_bw, thr=128):
         img_bin = 1 - img_bin
 
     return img_bin
+
+
+def split_image(img, img_bin, split_length, axis=0):
+    """Given a binarized image, applies a vertical bar scan to determine
+    where to divide up the image to be below the split dimension, such that
+    each split image can be padded.
+    """
+    min_axis = axis
+    max_axis = 1 - min_axis
+ 
+    length = max(img_bin.shape[0], img_bin.shape[1])
+    bool_clear = ~np.any(img_bin, axis=min_axis)
+    inds_clear = np.where(bool_clear)[0]
+    # Find indices in bool_clear < split_length
+    done = False
+    inds = [0]
+    ind_cut = 0
+    while not done:
+       
+        # Get as close to split_length as possible.
+        inds0 = inds_clear - ind_cut
+        inds_cand = np.where(np.logical_and(inds0 > 0, inds0 < split_length))
+        inds_cand = inds0[inds_cand]
+        # No candidates: Cut at split length:
+        if inds_cand.size == 0:
+            ind_new = split_length
+        else:
+            ind_new = np.max(inds_cand)
+       
+        inds.append(ind_cut + ind_new)
+        ind_cut += ind_new
+ 
+        # Check if done:
+        if ind_cut >= length:
+            done = True
+   
+    # Slice the image:
+    images = []
+    for i in range(len(inds)-1):
+        ind_s = inds[i]
+        ind_f = inds[i+1]
+        if min_axis == 0:
+            new_image = img[:,ind_s:ind_f]
+        else:
+            new_image = img[ind_s:ind_f,:]
+       
+        images.append(new_image)
+   
+    # Determine whether to remove the last image:
+    image_f = images[-1]
+ 
+    # Check if it has any pixels:
+    frac_pos = np.sum(image_f) / image_f.size
+    is_neg = frac_pos < 0.10
+    is_short = image_f.shape[max_axis] < image_f.shape[min_axis] // 2 
+ 
+    if is_short or is_neg:
+        return images[:-1]
+    else:
+        return images
+ 
+ 
+def pad_image(image, pad_length, axis=0):
+    """Pads a binary image so that it matches the padded dimension. Fills it
+    with black. Here, make the pad length the same as the split length above.
+    Otherwise, cut the image so that it matches pad length.
+    """
+ 
+    min_axis = axis
+    max_axis = 1 - min_axis
+   
+    min_length = image.shape[min_axis]
+    max_length = image.shape[max_axis]
+ 
+    diff_length = pad_length - max_length
+    # Pad image:
+    if diff_length >= 0:
+        pad_length1 = diff_length // 2
+        if diff_length % 2 == 0:
+            pad_length2 = pad_length1
+        else:
+            pad_length2 = pad_length1 + 1
+ 
+        if min_axis == 0:
+            pad_shape1 = (min_length, pad_length1)
+            pad_shape2 = (min_length, pad_length2)
+        else:
+            pad_shape1 = (pad_length1, min_length)
+            pad_shape2 = (pad_length2, min_length)
+       
+        # Concatenate:
+        pad1 = np.zeros(pad_shape1, dtype=image.dtype)
+        pad2 = np.zeros(pad_shape2, dtype=image.dtype)
+        pad_image = np.concatenate((pad1, image, pad2), axis=max_axis)
+ 
+    else:
+        pad_length1 = -diff_length // 2
+        if diff_length % 2 == 0:
+            pad_length2 = pad_length1
+        else:
+            pad_length2 = pad_length1 + 1
+       
+        pad_image = image[pad_length1:-pad_length2]
+   
+    return pad_image
+ 
+ 
+def save_binary_image(filepath, image):
+    """Converts a binary image into a colored array to be saved into a .png.
+    """
+ 
+    # img_save = np.clip(255 * image.astype(np.int32), 0, 255).astype(np.uint8)
+    img_save = np.stack([image, image, image], axis=2)
+    cv2.imwrite(filepath, img_save)
+    return img_save
