@@ -21,7 +21,8 @@ setup(
         'pillow',
         'scikit-image',
         'torch',
-        'torchvision'
+        'torchvision',
+        'svgpathtools'
     ],
     extras_require={
         'test': [

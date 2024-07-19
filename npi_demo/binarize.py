@@ -27,6 +27,7 @@ class Binarization:
         self.gamma = params.get("gamma", 0.6)
         self.radius = params.get("radius", 8) # Radius of binarization
         self.wellner = params.get("wellner", 15) # Lower values is more strict
+        self.bg_blur_max = params.get("bg_blur_max", 81)
 
         # Grayscale conversion:
         self.lab = params.get("lab", True)
@@ -124,7 +125,7 @@ class Binarization:
 
         # Get blur size:
         length = min(img_rs.shape[0], img_rs.shape[1])
-        blur_size = int(length * self.bg_blur_ratio)
+        blur_size = min(int(length * self.bg_blur_ratio), self.bg_blur_max)
         # Blur size must always be odd
         if blur_size % 2 == 0:
             blur_size += 1
