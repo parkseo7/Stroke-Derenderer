@@ -17,7 +17,10 @@ from npi_demo.helper.helper_strokes import (
     cum_lengths,
     cubic_approximation,
     pixel_spline,
-    pixelate
+    pixelate,
+    process_bbox,
+    bezier_to_label,
+    process_label
 )
 
 DFLT_SHAPE = (128, 128) # Character shape
@@ -27,6 +30,7 @@ DFLT_MARGINS = (4, 4)
 DFLT_MAX_RESIZE = 2.0
 DFLT_ERR_PER_RDP = 0.02
 DFLT_BLUR_SIZE = (3, 3)
+DFLT_MIN_LENGTH = 6
 EPS = 1e-6
 
 class ProcessStrokes:
@@ -43,6 +47,7 @@ class ProcessStrokes:
         self.err_fac = params.get("err_fac", 0.75)
         
         self.blur_size = params.get("blur_size", DFLT_BLUR_SIZE)
+        self.min_stroke_length = params.get("min_stroke_length", DFLT_MIN_LENGTH)
 
     
     def _cut_strokes(self, point_strokes):
@@ -64,6 +69,37 @@ class ProcessStrokes:
 
         return cut_strokes
     
+
+    def generate_datapoint(self, inter_strokes):
+        """Goes from POT point strokes to data points. Apply to
+        interpolated strokes.
+        """
+
+        rs_paths, img = self.process_strokes(inter_strokes)
+        img = self.augment_image(img)
+
+        stroke_labels = []
+        for p in rs_paths:
+            poly = p.poly()
+            if len(poly) == 1:
+                p = CubicBezier(p[0], 2*p[0]/3+p[1]/3, p[0]/3+2*p[1]/3, p[1])
+            elif len(poly) == 2:
+                p = CubicBezier(p[0], (p[0]+p[1])/2, (p[1]+p[2])/2, p[2])
+
+            if p.length() <= self.min_stroke_length:
+                continue 
+
+            # Get bounding box in format (xc, yc, h, w)
+            bbox_c = process_bbox(p.bbox(), img.shape)
+
+            # Configure bezier points to predict:
+            tgt = bezier_to_label(p.bpoints())
+            labels = process_label(bbox_c, tgt)
+
+            stroke_labels.append((bbox_c, labels))
+        
+        return img, stroke_labels
+
 
     def interpolate_strokes(self, point_strokes):
         """Given point strokes, apply a quadratic or linear interpolation,
@@ -159,7 +195,7 @@ class ProcessStrokes:
             img_canvas[Xpix, Ypix] = 1
         
         # Needs canvas image to be transposed
-        return rs_strokes, rs_bboxes, rs_paths, img_canvas.T
+        return rs_paths, img_canvas.T
     
 
     def augment_image(self, img_canvas):
@@ -172,14 +208,6 @@ class ProcessStrokes:
         img_blur = cv2.blur(img_bw, self.blur_size)
 
         return img_blur
-
-
-    def get_bezier_attrs(self, p):
-        """Given a Bezier path, determines its label attributes, mainly
-        the bounding box and anchor points inside the bounding box.
-        """
-
-        pass
 
 
     def cubic_fitting(self, X, Y):

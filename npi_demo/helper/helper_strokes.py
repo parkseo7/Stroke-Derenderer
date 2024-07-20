@@ -1,8 +1,13 @@
 import numpy as np
 from scipy.interpolate import splprep, splev
+import pickle
 
 EPS = 1e-6
 
+def load_metrics(filename):
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
+    
 
 def fit_new_shape(old_shape, new_shape, margins, max_scale):
 
@@ -168,3 +173,118 @@ def pixelate(X, Y):
     
     X_pixels, Y_pixels = remove_repeating(X_pixels, Y_pixels)
     return X_pixels, Y_pixels
+
+
+def process_bbox(bbox, img_shape, lw=2):
+    """Expands the bbox slightly, and returns the bbox to plot,
+    and the centerpoint, dimensions
+    """
+
+    xs, xf, ys, yf = bbox
+    h, w = xf - xs, yf - ys
+    xc = (xs + xf) / 2
+    yc = (ys + yf) / 2
+    h_new = h+2*lw
+    w_new = w+2*lw
+    xs = np.clip(xc - h_new/2, 0, img_shape[0])
+    xf = np.clip(xc + h_new/2, 0, img_shape[0])
+    ys = np.clip(yc - w_new/2, 0, img_shape[1])
+    yf = np.clip(yc + w_new/2, 0, img_shape[1])
+    h, w = xf - xs, yf - ys
+    xc = (xs + xf) / 2
+    yc = (ys + yf) / 2
+
+    return (xc, yc, h, w)
+
+
+def get_plot_bbox(bbox_c):
+    """Get a plot bbox.
+    """
+
+    xc, yc, h, w = bbox_c
+    xs = xc - h / 2
+    xf = xc + h / 2
+    ys = yc - w / 2
+    yf = yc + w / 2
+
+    bbox = np.array([
+        [xs, ys],
+        [xs, yf],
+        [xf, yf],
+        [xf, ys],
+        [xs, ys]
+    ])
+
+    return bbox
+
+
+def bezier_to_label(bpoints):
+    """Given bpoints, transforms them into label points
+    by doing two interpolations.
+    """
+
+    b0 = bpoints[0] 
+    b1 = bpoints[1] 
+    b2 = bpoints[2] 
+    b3 = bpoints[3] 
+
+    # First interpolation:
+    bb1 = (b0 + b1) / 2
+    bb2 = (b2 + b3) / 2
+
+    # Second interpolation:
+    bbb1 = (2 * bb1 + bb2) / 3
+    bbb2 = (bb1 + 2 * bb2) / 3
+
+    b_arr = np.array([b0, bbb1, bbb2, b3])
+    tgt = np.stack([b_arr.real, b_arr.imag]).T
+
+    return tgt
+
+
+def label_to_bezier(tgt):
+    """The inverse transform: Predicted curve points to bezier.
+    To be applied onto model predictions.
+    """
+
+    b0 = tgt[0]
+    b3 = tgt[3] 
+    bbb1 = tgt[1] 
+    bbb2 = tgt[2] 
+
+    bb1 = 2 * bbb1 - bbb2
+    bb2 = 2 * bbb2 - bbb1
+
+    b1 = 2 * bb1 - b0
+    b2 = 2 * bb2 - b3 
+
+    # Make complex:
+    b_arr = np.stack([b0, b1, b2, b3])
+    b_arr = b_arr[:,0] + 1j*b_arr[:,1]
+
+    return b_arr
+
+
+def process_label(bbox_c, tgt):
+    """Scales the labels to the bounding box. To be enable
+    sigmoid scaling.
+    """
+
+    xc, yc, h, w = bbox_c
+    x0 = xc - h / 2
+    y0 = yc - w / 2
+
+    X = tgt[:,0] - x0
+    Y = tgt[:,1] - y0 
+    X_rs = np.clip(X / h, 0, 1) 
+    Y_rs = np.clip(Y / w, 0, 1)
+
+    # Orient along width to go left to right
+    if Y_rs[0] > Y_rs[-1]:
+        X_rs = np.flip(X_rs)
+        Y_rs = np.flip(Y_rs)
+
+    # Stack again:
+    labels = np.stack([X_rs, Y_rs]).T
+
+    return labels
