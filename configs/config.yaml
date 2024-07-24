@@ -1,0 +1,35 @@
+# All-purpose configuration arguments for experimentation. 
+# Save and update accordingly. Save parts to log files.
+
+# Parent directories
+directories:
+  data: /home/daniel/data/npi_classification
+  model: /home/daniel/npi-class/models
+
+data:
+  handwritten: ['SIW_english', 'RYAN_English', 'RYAN_Chinese']
+  printed: ['SIW_english', 'RYAN_English', 'RYAN_Chinese']
+
+model:
+  name: "shufflenet"
+  version: 1
+  input: [48, 196]
+  channels: 1
+  width: 1
+  depth: 1
+  classes: 2
+
+train:
+  batch_size: 64
+  epochs: 40
+  peak_lr: 0.007
+  base_lr: 0.0001
+  decay_lr: 0.0001
+  peak_epoch: 10
+  num_workers: 3
+  save_per_epoch: 5
+  split: 0.90 # Training-validation split
+  lr: 1.0
+  grad_clip: 5.0
+  weight_decay: 0.0001
+  lr_schedule: [1.0, 0.1]
