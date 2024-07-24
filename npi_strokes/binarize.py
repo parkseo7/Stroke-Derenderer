@@ -8,7 +8,7 @@ import torch
 from torchvision.io import read_image, ImageReadMode
 from torchvision import transforms
 
-from npi_demo.helper.helper_bin import (
+from npi_strokes.helper.helper_bin import (
     image_correction,
     process_image_lab,
     normalize_image,
@@ -58,6 +58,29 @@ class Binarization:
         return img # 1, H, W
 
 
+    def process_text_line(self, img):
+        """Given an image of a single text line, pre-processes into an input for
+        the model.
+        """
+
+        img_pp = self.preprocess(img)
+
+        # Actual preprocessed is 255 - img_pp
+        img_rs = self.resize(255 - img_pp)
+
+        # Use binarized image only to segment the text further:
+        img_bin = self.binarize(img_pp)
+        img_bin = np.clip(255 * img_bin.astype(np.int32), 0, 255).astype(np.uint8)
+
+        img_bin_rs = self.resize(img_bin)
+        img_bin_rs = self.binarize_simple(img_bin_rs)
+        pad_imgs, lengths = self.split_text_line(img_rs, img_bin_rs)
+        if len(pad_imgs) != len(lengths):
+            lengths = lengths[:-1]
+            
+        return pad_imgs, lengths
+    
+
     def load_and_save(self, img_filepath, save_folderpath, label=0):
         """Loads a line of image text. Segments the image and saves each cut image.
         Attaches the label and the segment number. If handwritten, label = 1.
@@ -88,18 +111,17 @@ class Binarization:
 
         img = cv2.imread(img_filepath)
 
-        br = Binarization()
-        img_pp = br.preprocess(img)
+        img_pp = self.preprocess(img)
 
         # Actual preprocessed is 255 - img_pp
-        img_rs = br.resize(255 - img_pp)
+        img_rs = self.resize(255 - img_pp)
 
         # Use binarized image only to segment the text further:
-        img_bin = br.binarize(img_pp)
+        img_bin = self.binarize(img_pp)
         img_bin = np.clip(255 * img_bin.astype(np.int32), 0, 255).astype(np.uint8)
 
-        img_bin_rs = br.resize(img_bin)
-        img_bin_rs = br.binarize_simple(img_bin_rs)
+        img_bin_rs = self.resize(img_bin)
+        img_bin_rs = self.binarize_simple(img_bin_rs)
 
         return img_rs, img_bin_rs
     
@@ -111,9 +133,10 @@ class Binarization:
 
         w = self.split_length
         images = split_image(img_pp, img_bin, w, axis=0)
+        lengths = [x.shape[1-self.axis] for x in images]
         pad_images = [pad_image(x, w, axis=self.axis) for x in images]
 
-        return pad_images
+        return pad_images, lengths
     
 
     def preprocess(self, img):

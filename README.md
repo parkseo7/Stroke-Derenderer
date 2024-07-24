@@ -27,3 +27,12 @@ In screen session:
 Run training and exporting scripts within session
 
 Stop Docker session: docker stop <container-name>
+
+
+## Local setup
+
+On this machine, run the following:
+    conda create --name myenv
+    conda install python==<version>
+    pip install -e .
+    pip install ipykernel --upgrade

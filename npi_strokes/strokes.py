@@ -11,7 +11,7 @@ import cv2
 from scipy.interpolate import splprep, splev
 from skimage.morphology import binary_dilation
 from svgpathtools import polynomial2bezier, CubicBezier, QuadraticBezier
-from npi_demo.helper.helper_strokes import (
+from npi_strokes.helper.helper_strokes import (
     fit_new_shape,
     douglas_peucker,
     cum_lengths,

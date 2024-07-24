@@ -8,9 +8,9 @@ import torchvision.transforms as transforms
 from pathlib import Path
 import numpy as np
 from tqdm.auto import tqdm
-from npi_class.model.efficientnet import EfficientNet
-from npi_class.model.shufflenet import ShuffleNet
-from npi_class.model.dataset import TextBWDataset
+from npi_strokes.model.efficientnet import EfficientNet
+from npi_strokes.model.shufflenet import ShuffleNet
+from npi_strokes.model.dataset import TextBWDataset
 
 import pickle
 
