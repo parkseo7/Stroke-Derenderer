@@ -412,6 +412,132 @@ def sort_ccwise(points, centerpoint=None):
     return inds_sort
 
 
+def perpendicular_dist(p0, pl1, pl2):
+    """Returns the distance from point p0 to the line segment through
+    points pl1, pl2.
+    """
+
+    d_x = pl2[0] - pl1[0]
+    d_y = pl2[1] - pl1[1]
+
+    n_x, n_y = -d_y, d_x
+    C = -pl1[0]*n_x - pl1[1]*n_y
+    norm = max(np.sqrt(n_x**2 + n_y**2), EPS)
+    dist = np.abs(n_x * p0[0] + n_y * p0[1] + C) / norm
+    return dist
+
+
+def douglas_peucker(X, Y, eps):
+    """Resample using the Douglas-Peucker algorithm. Do not apply to
+    closed curves!
+    """
+
+    dmax = 0
+    ind = 0
+    end = X.size
+    p_start = (X[0], Y[0])
+    p_end = (X[end-1], Y[end-1])
+    for i in range(1, end-1):
+        p0 = (X[i], Y[i])
+        D = perpendicular_dist(p0, p_start, p_end)
+        if D > dmax:
+            ind = i
+            dmax = D
+        
+    if dmax > eps:
+        X1, Y1 = douglas_peucker(X[:ind], Y[:ind], eps)
+        X2, Y2 = douglas_peucker(X[ind:], Y[ind:], eps)
+        X_rs = np.concatenate((X1, X2))
+        Y_rs = np.concatenate((Y1, Y2))
+    
+    else:
+        X_rs = np.array([X[0], X[-1]])
+        Y_rs = np.array([Y[0], Y[-1]])
+    
+    X_out, Y_out = remove_repeating(X_rs, Y_rs, radius=eps)
+    return X_out, Y_out
+
+
+def cum_lengths(X, Y):
+    """Given curve points (X, Y), evaluate the cumulative arc-lengths to get
+    a proportional time array. Also returns the total length of the curve.
+    """
+
+    dists = np.sqrt(np.diff(X)**2 + np.diff(Y)**2)
+    lengths = np.cumsum(dists)
+    lengths = np.concatenate(([0], lengths))
+    t_arr = lengths / (lengths[-1] + EPS)
+    return t_arr, lengths[-1]
+
+
+def nearest_timestep(t_src, t_tgt):
+    """For each value in t_src, return the index of t_tgt that is the minimal
+    distance between t_src[i] and t_tgt for each i. This is the equivalent
+    of scipy.distance.cdist, which is an efficient triple loop in C.
+    Assume t_src, t_tgt are sorted in ascending order.
+    """
+
+    inds_near = []
+    for i in range(t_src.size):
+        ind_tgt = np.argmin(np.abs(t_src[i] - t_tgt))
+        inds_near.append(ind_tgt)
+    return inds_near
+
+
+def adjacency_weights(X, Y):
+    """Evaluates distance weights based on the farther adjacent point
+    at each point along curve (X, Y).
+    """
+
+    dists = np.sqrt(np.diff(X)**2 + np.diff(Y)**2)
+    dists1 = dists[:-1]
+    dists2 = dists[1:]
+    # Get maximum at each index between dist1 and dist2:
+    dists_adj = (dists1 + dists2) / 2
+
+    # Add first and last weight:
+    dists_adj = np.concatenate(([dists[0]/2], dists_adj, [dists[-1]/2]))
+    return dists_adj
+
+
+def poly_regression(t_arr, X, weights, s):
+    """Given times and an X array, fit a polynomial. Here, weights is an array of
+    weights of equal length to and s is the smoothness.
+    The degree of the polynomial is X.size // s. Uses chebychev modes to get
+    the time array.
+    """
+
+    N = min(t_arr.size, X.size, weights.size)
+    t_arr = t_arr[:N]
+    X = X[:N]
+    weights = weights[:N]
+
+    deg = min(int(N / s) + 1, N-1)
+    
+    # Create diagonal matrix with weights as entries:
+    weights_mat = np.zeros((weights.size, weights.size))
+    inds_arr = np.arange(weights.size)
+    weights_mat[inds_arr, inds_arr] = weights
+
+    # Get the t-array matrix:
+    t_poly = np.stack([t_arr**m for m in range(deg)]).T
+    beta = np.linalg.pinv(t_poly.T @ weights_mat @ t_poly) @ (t_poly.T @ weights_mat @ X)
+    
+    return beta
+
+
+def poly_eval(t, beta):
+    """Given a time-array and the coefficients of a polynomial beta, returns
+    the evaluated values.
+    """
+
+    deg = beta.size
+    t_poly = [beta[m]*t**m for m in range(deg)]
+    # Sum over all arrays in the list. t and poly_output must be the same shape.
+    poly_output = np.sum(t_poly, axis=0)
+    return poly_output
+
+
 # SUPPLEMENTARY FUNCTIONS
 def add_to_group(group, f, edges):
     """Update the group with new entries until exhausted.

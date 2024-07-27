@@ -22,13 +22,28 @@ class PageStrokeEstimation:
     def __init__(self, img, **params):
         self.img = img
 
-        # Parameters
-        self.expand_per = params.get("expand_per", 0.25)
-        self.mask_value = params.get("mask_value", (1, 255, 1))
-        self.upscale = params.get("upscale", 256)
+        # PARAMETERS
 
+        # The percentage by which the text bounding boxes are expanded by to get the segmented text.
+        # dtype: positive float value between 0-1.
+        self.expand_per = params.get("expand_per", 0.25)
+
+        # The color value to fill in blank regions during tilt correction. Use an uncommon text color here.
+        # dtype: 3-tuple of integers from 0-255.
+        self.mask_value = params.get("mask_value", (1, 255, 1))
+
+        # The upscaled pixel height for the segmented text image.
+        # dtype: positive integer.
+        self.upscale = params.get("upscale", 256)
+        
+        # The line width scaling coefficient to go from predicted NPI line width to value read by HWR engine.
+        # dtype: Any float value between 0-1.
         self.lw_scale = params.get("lw_scale", 0.25) # Scaling between 0.15-0.2
+
+        # The binarization method to convert pre-processed grayscale images.
+        # dtype: string that determines the method. Default: "bradley".
         br_method = params.get("br_method", "bradley")
+        
         # Binarizer, stroke estimator:
         self.br = Binarization(method=br_method)
         self.se = LineStrokeEstimation()

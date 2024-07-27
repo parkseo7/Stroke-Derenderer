@@ -24,7 +24,13 @@ from npi_demo.helper.helper_stroke import (
     median_node,
     remove_repeating,
     normalize_vector,
-    sort_ccwise
+    sort_ccwise,
+    douglas_peucker,
+    cum_lengths,
+    adjacency_weights,
+    poly_regression,
+    poly_eval,
+    nearest_timestep,
 )
 
 EPS = 1e-6
@@ -197,7 +203,7 @@ class StrokeEstimation:
     
 
     # KEY METHODS
-    def estimate_strokes(self):
+    def estimate_strokes(self, debug=True):
         """Estimates the strokes using the initial skeleton.
         """
 
@@ -234,7 +240,8 @@ class StrokeEstimation:
         rdp_curves = []
         rdp_lws = []
         for stroke in all_strokes:
-            (X, Y), lws = self.refine_stroke(stroke)
+            (X, Y), lws = self.refine_stroke_alt(stroke)
+            # (X, Y), lws = self.refine_stroke(stroke)
             rdp_curves.append((X, Y))
             rdp_lws.append(lws)
 
@@ -414,6 +421,56 @@ class StrokeEstimation:
         return conn_stroke, is_traversed
     
 
+    def refine_stroke_alt(self, stroke):
+        """An alternative way to refine the stroke, without using B-spline.
+        """
+
+        X, Y = np.unravel_index(stroke, self.img_shape)
+        # Remove same endpoint (avoid full loops):
+        if X[0] == X[-1] and Y[0] == Y[-1]:
+            X, Y = X[:-1], Y[:-1]
+
+        if X.size <= 1:
+            return None, None
+        
+        # Remove repeating points in the curve:
+        X, Y = remove_repeating(X, Y)
+        
+        # Apply Douglas-Peucker algorithm:
+        X_rdp, Y_rdp = douglas_peucker(X, Y, self.lw//8)
+
+        s = 2.5
+        # Apply polynom"ial least squares fit:
+        t_arr, arc_length = cum_lengths(X_rdp, Y_rdp)
+
+        # Get weights for regression based on max adj. distance:
+        weights = adjacency_weights(X_rdp, Y_rdp)
+        weights = np.ones(X_rdp.size)
+
+        # t_arr = np.linspace(0, 1, num=X_rdp.size)
+        betas_x = poly_regression(t_arr, X_rdp, weights, s=s)
+        betas_y = poly_regression(t_arr, Y_rdp, weights, s=s)
+
+        # Evaluate at a sampling rate:
+        num_samples = int(arc_length * self.sample_per_pixel) + 2
+        t_inter = np.linspace(t_arr[0], t_arr[-1], 
+                              num=num_samples, 
+                              endpoint=True)
+
+        # Get interpolated version, and 
+        X_eval = poly_eval(t_inter, betas_x)
+        Y_eval = poly_eval(t_inter, betas_y)
+        
+        # For line-widths, find the closest t_rdp point to t_inter.
+        inds_near = nearest_timestep(t_inter, t_arr)
+        X_near = X[inds_near]
+        Y_near = Y[inds_near]
+        line_widths = self.img_mdists[X_near, Y_near]
+
+        # Polynomial fit:
+        return (X_eval, Y_eval), line_widths
+
+
     def refine_stroke(self, stroke):
         """Given a stroke, return the coordinates (x, y), alongside the line
         width, using B-spline interpolation. Returns a smoothened curve.
@@ -430,6 +487,7 @@ class StrokeEstimation:
         X, Y = remove_repeating(X, Y)
         k = min(X.size-1, 3)
         s = X.size // 4
+        
         tck, t_arr = splprep((X, Y), k=k, s=s)
 
         # Also get the arc-length of the stroke:
