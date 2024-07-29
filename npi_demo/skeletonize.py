@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 # Scipy dependencies. Need to sort out C++ equivalency.
 from scipy.spatial.distance import cdist
-from scipy.interpolate import splprep, splev
+from scipy.interpolate import splprep, splrep, splev
 
 from npi_demo.helper.helper_sk import (
     get_binarized_islands,
@@ -240,8 +240,8 @@ class StrokeEstimation:
         rdp_curves = []
         rdp_lws = []
         for stroke in all_strokes:
-            (X, Y), lws = self.refine_stroke_alt(stroke)
-            # (X, Y), lws = self.refine_stroke(stroke)
+            # (X, Y), lws = self.refine_stroke_alt(stroke)
+            (X, Y), lws = self.refine_stroke(stroke)
             rdp_curves.append((X, Y))
             rdp_lws.append(lws)
 
@@ -445,7 +445,6 @@ class StrokeEstimation:
 
         # Get weights for regression based on max adj. distance:
         weights = adjacency_weights(X_rdp, Y_rdp)
-        weights = np.ones(X_rdp.size)
 
         # t_arr = np.linspace(0, 1, num=X_rdp.size)
         betas_x = poly_regression(t_arr, X_rdp, weights, s=s)
@@ -488,7 +487,12 @@ class StrokeEstimation:
         k = min(X.size-1, 3)
         s = X.size // 4
         
-        tck, t_arr = splprep((X, Y), k=k, s=s)
+        # Use splrep on each coordinate:
+        t_arr, arc_length = cum_lengths(X, Y)
+        tck_x = splrep(t_arr, X, k=k, s=s)
+        tck_y = splrep(t_arr, Y, k=k, s=s)
+
+        # tck, t_arr = splprep((X, Y), k=k, s=s)
 
         # Also get the arc-length of the stroke:
         length = np.sum(np.sqrt(np.diff(X)**2 + np.diff(Y)**2))
@@ -498,7 +502,10 @@ class StrokeEstimation:
         t_inter = np.linspace(t_arr[0], t_arr[-1], 
                               num=num_samples, 
                               endpoint=True)
-        Xint, Yint = splev(t_inter, tck)
+        
+        Xint = splev(t_inter, tck_x)
+        Yint = splev(t_inter, tck_y)
+        # Xint, Yint = splev(t_inter, tck)
 
         # Get closest points to each float stroke point Xint, Yint:
         D = cdist(t_arr[:,None], t_inter[:,None])
