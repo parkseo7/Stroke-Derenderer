@@ -520,7 +520,7 @@ def poly_regression(t_arr, X, weights, s):
     weights_mat[inds_arr, inds_arr] = weights
 
     # Get the t-array matrix:
-    t_poly = np.stack([t_arr**m for m in range(deg)]).T
+    t_poly = np.stack([t_arr**m for m in range(deg+1)]).T
     beta = np.linalg.pinv(t_poly.T @ weights_mat @ t_poly) @ (t_poly.T @ weights_mat @ X)
     
     return beta
@@ -538,6 +538,66 @@ def poly_eval(t, beta):
     return poly_output
 
 
+def sample_points(X, Y, max_length):
+    """Given a length, samples equally spaced points between each X, Y pair of points.
+    Also, keep track of which index the newly sampled points are in-between.
+    """
+
+    N = min(X.size, Y.size)
+    Xnew = []
+    Ynew = []
+    inds = []
+    for n in range(N-1):
+        xs, ys = X[n], Y[n]
+        xf, yf = X[n+1], Y[n+1]
+        length = np.sqrt((xf - xs)**2 + (yf - ys)**2)
+        # Subdivide:
+        if length > max_length:
+            N_div = int(length / max_length)
+            t_arr = np.linspace(0, 1, num=N_div+2)
+            X_div = (1 - t_arr) * xs + t_arr * xf
+            Y_div = (1 - t_arr) * ys + t_arr * yf
+            # Omit last point to avoid overlap
+            Xnew.append(X_div[:-1])
+            Ynew.append(Y_div[:-1])
+            inds.append([n] * (X_div.size-1))
+        
+        else:
+            Xnew.append([xs])
+            Ynew.append([ys])
+            inds.append([n])
+    
+    # Concatenate and add last point:
+    Xnew = np.concatenate(Xnew)
+    Ynew = np.concatenate(Ynew)
+    inds = np.concatenate(inds)
+
+    Xnew = np.concatenate((Xnew, [X[-1]]))
+    Ynew = np.concatenate((Ynew, [Y[-1]]))
+    inds = np.concatenate((inds, [N-1]))
+
+    return Xnew, Ynew, inds
+        
+    
+
+
+            
+
+def check_endpoints(X, Y, X2, Y2):
+    """Fills the first curve with the endpoints of the other.
+    """
+
+    if X[0] != X2[0] or Y[0] != Y2[0]:
+        X = np.concatenate(([X2[0]], X))
+        Y = np.concatenate(([Y2[0]], Y))
+    
+    if X[-1] != X2[-1] or Y[-1] != Y2[-1]:
+        X = np.concatenate((X, [X2[-1]]))
+        Y = np.concatenate((Y, [Y2[-1]]))
+
+    return X, Y
+
+ 
 # SUPPLEMENTARY FUNCTIONS
 def add_to_group(group, f, edges):
     """Update the group with new entries until exhausted.

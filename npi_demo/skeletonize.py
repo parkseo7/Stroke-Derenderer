@@ -31,6 +31,8 @@ from npi_demo.helper.helper_stroke import (
     poly_regression,
     poly_eval,
     nearest_timestep,
+    check_endpoints,
+    sample_points
 )
 
 EPS = 1e-6
@@ -167,6 +169,8 @@ class StrokeEstimation:
         self.sample_per_pixel = params.get("sample_per_pixel", 0.2) # Number of interpolated samples per pixel
         self.quint_angle_thr = params.get("quint_angle_thr", np.cos(np.pi/4))
 
+        self.rdp_fac = params.get("rdp_fac", 4) # Divide avg line width by fac to get RDP error
+        self.sample_fac = params.get("sample_fac", 8) # Divide avg line width by fac to get sample distance.
         # Initialize graph:
         lw, img_boundary = avg_stroke_width(img_mdist)
         edges, edge_types = skeleton_to_edges(img_sk)
@@ -240,8 +244,10 @@ class StrokeEstimation:
         rdp_curves = []
         rdp_lws = []
         for stroke in all_strokes:
-            # (X, Y), lws = self.refine_stroke_alt(stroke)
-            (X, Y), lws = self.refine_stroke(stroke)
+            if debug:
+                (X, Y), lws = self.refine_stroke_alt(stroke)
+            else:
+                (X, Y), lws = self.refine_stroke(stroke)
             rdp_curves.append((X, Y))
             rdp_lws.append(lws)
 
@@ -437,36 +443,13 @@ class StrokeEstimation:
         X, Y = remove_repeating(X, Y)
         
         # Apply Douglas-Peucker algorithm:
-        X_rdp, Y_rdp = douglas_peucker(X, Y, self.lw//8)
+        X_rdp, Y_rdp = douglas_peucker(X, Y, self.lw/self.rdp_fac)
 
-        s = 2.5
-        # Apply polynom"ial least squares fit:
-        t_arr, arc_length = cum_lengths(X_rdp, Y_rdp)
-
-        # Get weights for regression based on max adj. distance:
-        weights = adjacency_weights(X_rdp, Y_rdp)
-
-        # t_arr = np.linspace(0, 1, num=X_rdp.size)
-        betas_x = poly_regression(t_arr, X_rdp, weights, s=s)
-        betas_y = poly_regression(t_arr, Y_rdp, weights, s=s)
-
-        # Evaluate at a sampling rate:
-        num_samples = int(arc_length * self.sample_per_pixel) + 2
-        t_inter = np.linspace(t_arr[0], t_arr[-1], 
-                              num=num_samples, 
-                              endpoint=True)
-
-        # Get interpolated version, and 
-        X_eval = poly_eval(t_inter, betas_x)
-        Y_eval = poly_eval(t_inter, betas_y)
-        
-        # For line-widths, find the closest t_rdp point to t_inter.
-        inds_near = nearest_timestep(t_inter, t_arr)
-        X_near = X[inds_near]
-        Y_near = Y[inds_near]
+        # Sample points between RDP points:
+        X_eval, Y_eval, inds_near = sample_points(X_rdp, Y_rdp, self.lw/self.sample_fac)
+        X_near = X_rdp[inds_near]
+        Y_near = Y_rdp[inds_near]
         line_widths = self.img_mdists[X_near, Y_near]
-
-        # Polynomial fit:
         return (X_eval, Y_eval), line_widths
 
 
