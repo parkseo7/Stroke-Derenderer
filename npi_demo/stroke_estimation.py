@@ -49,7 +49,7 @@ class PageStrokeEstimation:
         self.se = LineStrokeEstimation()
 
     
-    def export_json(self, strokes, lws, filepath, dtype=float):
+    def export_json(self, strokes, lws, colors, filepath, dtype=float):
         """Given estimated strokes and line widths, saves as a json file
         to be read by the HWR engine.
         """
@@ -57,11 +57,13 @@ class PageStrokeEstimation:
         trace_list_json = []
         for i, segment in enumerate(strokes):
             lw = lws[i]
+            color = colors[i]
 
             for j, trace in enumerate(segment):
                 trace_json = []
                 lw_trace = lw[j]
                 lw_json = []
+                color_trace = list(color[j])
 
                 stroke_lw = max(np.max(lw_trace), 1.0)
                 stroke_pp = lw_trace / stroke_lw
@@ -80,6 +82,9 @@ class PageStrokeEstimation:
                     trace_list_json.append({
                         'mId':len(trace_list_json),
                         'mLineWidth': self.lw_scale * stroke_lw,
+                        'mLineColor_r': int(color_trace[0]),
+                        'mLineColor_g': int(color_trace[1]),
+                        'mLineColor_b': int(color_trace[2]),
                         'mPoints':trace_json,
                         "pen": lw_json
                     })
@@ -126,7 +131,8 @@ class PageStrokeEstimation:
         # Process futures:
         all_seg_strokes = [x[0] for x in futures]
         all_seg_lws = [x[1] for x in futures]
-        all_seg_pos = [x[2] for x in futures]
+        all_seg_colors = [x[2] for x in futures]
+        all_seg_pos = [x[3] for x in futures]
 
         # Sort segmented text lines vertically, then horizontally:
         order = ('y', 'x')
@@ -136,8 +142,9 @@ class PageStrokeEstimation:
 
         all_seg_strokes = [all_seg_strokes[i] for i in inds_sort]
         all_seg_lws = [all_seg_lws[i] for i in inds_sort]
+        all_seg_colors = [all_seg_colors[i] for i in inds_sort]
 
-        return all_seg_strokes, all_seg_lws
+        return all_seg_strokes, all_seg_lws, all_seg_colors
     
 
     def estimate_segment_strokes(self, bbox, img=None):
@@ -160,7 +167,7 @@ class PageStrokeEstimation:
         # Apply binarization, stroke estimation:
         img_pp = self.br.preprocess(img_rs)
         img_bin = self.br.binarize(img_pp)
-        strokes, lws, img_new = self.se.estimate_strokes(img_bin)
+        strokes, lws, colors = self.se.estimate_strokes(img_bin, img_rs)
 
         # Reverse transformation:
         strokes_trans = []
@@ -183,7 +190,7 @@ class PageStrokeEstimation:
         # Get center of bounding box (for top-bottom sorting):
         center = get_centerpoint(bbox)
 
-        return strokes_trans, lws, center
+        return strokes_trans, lws, colors, center
     
 
     def segment_bboxes(self, img, bboxes, upscale=False):

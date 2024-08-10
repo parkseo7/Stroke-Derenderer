@@ -27,12 +27,8 @@ from npi_demo.helper.helper_stroke import (
     sort_ccwise,
     douglas_peucker,
     cum_lengths,
-    adjacency_weights,
-    poly_regression,
-    poly_eval,
-    nearest_timestep,
-    check_endpoints,
-    sample_points
+    sample_points,
+    get_island_color
 )
 
 EPS = 1e-6
@@ -50,17 +46,21 @@ class LineStrokeEstimation:
         self.crop_margin = params.get("crop_margin", 1)
 
 
-    def estimate_strokes(self, img_bin):
+    def estimate_strokes(self, img_bin, img_color):
         """Given a binarized image, estimate the strokes. Returns the strokes,
         corresponding line widths, and a new binarized image where the 
         strokes were estimated.
         """
 
         islands, img_new = self.get_islands(img_bin)
-        strokes, lws = self.get_strokes(islands)
-        strokes, lws = self.orient_strokes(strokes, lws, img_bin.shape)
+        strokes, lws, colors = self.get_strokes(islands, img_color)
+        inds_sort, oriented_strokes = self.orient_strokes(strokes, img_bin.shape)
 
-        return strokes, lws, img_new
+        strokes = [oriented_strokes[i] for i in inds_sort]
+        lws = [lws[i] for i in inds_sort]
+        colors = [colors[i] for i in inds_sort]
+
+        return strokes, lws, colors
 
 
     def get_islands(self, img_bin):
@@ -87,13 +87,14 @@ class LineStrokeEstimation:
         return islands, img_new
     
 
-    def get_strokes(self, islands):
+    def get_strokes(self, islands, img_color):
         """Given binarized islands, applies stroke estimation to each island.
         Can be parallelized.
         """
 
         all_strokes = []
         all_lws = []
+        all_colors = []
 
         for island in islands:
             img_sk = island["img_sk"]
@@ -107,13 +108,16 @@ class LineStrokeEstimation:
             for (X, Y) in strokes:
                 translated_strokes.append((pos[1] + X, pos[0] + Y))
             
+            # Get island color:
+            color = get_island_color(img_mdist, pos, img_color)
             all_strokes += translated_strokes
             all_lws += lws
+            all_colors += [color for i in range(len(all_strokes))]
 
-        return all_strokes, all_lws
+        return all_strokes, all_lws, all_colors
         
     
-    def orient_strokes(self, strokes, lws, img_shape):
+    def orient_strokes(self, strokes, img_shape):
         """Orders the strokes using the image shape.
         """
 
@@ -145,10 +149,7 @@ class LineStrokeEstimation:
         points = np.array(points, dtype=dtype)
         inds_sort = np.argsort(points, order=order)
 
-        sorted_strokes = [oriented_strokes[i] for i in inds_sort]
-        sorted_lws = [lws[i] for i in inds_sort]
-
-        return sorted_strokes, sorted_lws
+        return inds_sort, oriented_strokes
 
 
 class StrokeEstimation:
@@ -171,6 +172,7 @@ class StrokeEstimation:
 
         self.rdp_fac = params.get("rdp_fac", 4) # Divide avg line width by fac to get RDP error
         self.sample_fac = params.get("sample_fac", 8) # Divide avg line width by fac to get sample distance.
+
         # Initialize graph:
         lw, img_boundary = avg_stroke_width(img_mdist)
         edges, edge_types = skeleton_to_edges(img_sk)

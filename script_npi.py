@@ -40,12 +40,13 @@ def main(img_filepath, json_filepath, num_workers=0):
     bboxes = td.predict_onnx_det(img)
 
     pse = PageStrokeEstimation(img)
-    all_strokes, all_lws = pse.estimate_strokes(bboxes, max_workers=num_workers)
-    json_file = pse.export_json(all_strokes, all_lws, json_filepath)
+    all_strokes, all_lws, all_colors = pse.estimate_strokes(bboxes, max_workers=num_workers)
+    json_file = pse.export_json(all_strokes, all_lws, all_colors, json_filepath)
 
     results = {
         "strokes": all_strokes,
         "line_widths": all_lws,
+        "colors": all_colors,
         "image": img,
         "bboxes": bboxes
     }

@@ -25,7 +25,8 @@ setup(
         'svgpathtools',
         'onnx',
         'onnxscript',
-        'onnxruntime'
+        'onnxruntime',
+        'customtkinter'
 
     ],
     extras_require={

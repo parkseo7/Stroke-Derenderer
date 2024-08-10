@@ -578,10 +578,6 @@ def sample_points(X, Y, max_length):
 
     return Xnew, Ynew, inds
         
-    
-
-
-            
 
 def check_endpoints(X, Y, X2, Y2):
     """Fills the first curve with the endpoints of the other.
@@ -598,6 +594,19 @@ def check_endpoints(X, Y, X2, Y2):
     return X, Y
 
  
+def get_island_color(img_mdist, pos, img_color):
+    """Obtain the average color of the cropped island.
+    """
+
+    y_arr, x_arr = np.where(img_mdist > 0)
+    x, y = pos[0], pos[1]
+    y_arr = y + y_arr
+    x_arr = x + x_arr
+    colors = img_color[y_arr, x_arr,:]
+    avg_color = np.mean(colors, axis=0).astype(np.int32)
+    return avg_color
+
+
 # SUPPLEMENTARY FUNCTIONS
 def add_to_group(group, f, edges):
     """Update the group with new entries until exhausted.
