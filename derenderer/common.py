@@ -5,6 +5,7 @@ import pickle
 import yaml
 import json
 import cv2
+import onnxruntime
 
 EPS = 1e-6
 
@@ -96,3 +97,12 @@ def normalize_image(image):
     normalized_image = cv2.normalize(image, None, 0, 255, 
                                      norm_type=cv2.NORM_MINMAX)
     return normalized_image
+
+
+def init_onnx_session(onnx_path):
+    """Start an ONNX inference, for testing.
+    """
+
+    providers = ['CPUExecutionProvider']
+    ort = onnxruntime.InferenceSession(onnx_path, providers=providers)
+    return ort

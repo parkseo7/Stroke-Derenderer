@@ -25,11 +25,15 @@ All model training is done with Pytorch. Inferences are done with OnnxRuntime.
 
 Use ONNX version `1.16` and onnxruntime version `1.18`.
 
-## Models
+## Inferencing
 
 Stroke derendering is composed of two main components: Text segmentation and stroke estimation.
 
 To run inferences, download the onnx model files [here](LINK).
+
+## Results
+
+The models were tested on 100 different images of handwritten text in English with ground truth strokes. The testing dataset and results can be found [here](LINK). Different metrics were calculated for both the text segmentation and stroke estimation steps.
 
 ## Repository structure
 
@@ -39,3 +43,10 @@ config | Configuration `.sh` files and `.yaml` files.
 data | Processes and exports usable offline and online strokes for training.
 models | Pytorch and onnx methods for loading data, training models, and running inferences.
 helper | Helper functions for all methods.
+
+##  Outline of methodology
+
+Text segmentation works by applying the UNet model with attention onto images of fixed height and variable width.
+The image is resized and partitioned into padded subimages of height 128px and width 384px. The model binarizes the subimages individually, then the subimages are glued to obtain the output of the original image.
+
+Stroke estimation works by applying a vision language model onto a binary image containing only text. The image is partitioned into character-sized subimages by isolating each connected binary island, then clustering nearby islands together. The stroke estimation model is applied to each subimage, a 224px by 224px binary image. The strokes are then rescaled and translated to align with the original image.
