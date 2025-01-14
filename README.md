@@ -30,12 +30,12 @@ Use ONNX version `1.16` and onnxruntime version `1.18`.
 Stroke derendering is composed of two main components: Text segmentation and stroke estimation.
 
 To set-up inferencing,
-1. Download the onnx model and configuration files [here](LINK).
-2. In the root directory, run `python main.py --models=<model directory> -input=<input directory> --output=<output directory>` where:
+1. Download the onnx model and configuration files [here](https://drive.google.com/drive/folders/1XbTwFgEDDENve8XuwkHnIYvpSqTnpGTS?usp=sharing).
+2. In the root directory, run `python main.py --models=<model dir> -input=<input dir> --output=<output dir>` where:
 
-- `<model directory>`: Path to the downloaded models and configurations folder.
-- `<input directory>`: Path to the folder containing .png images to run inferences on.
-- `<output directory>`: (Optional) Path to the folder where all model outputs will be exported. By default it will save to ./images/output.
+- `<model dir>`: Path to the downloaded models and configurations folder.
+- `<input dir`: Path to the folder containing .png images to run inferences on.
+- `<output dir>`: (Optional) Path to the folder where all model outputs will be exported. By default it will save to ./images/output.
 
 ## Results
 
