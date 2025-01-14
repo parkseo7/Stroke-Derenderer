@@ -15,12 +15,6 @@ conda install python==3.10
 pip install -e .
 ```
 
-To enable and run pytesting, use the commands
-```
-pip install -e '.[test]'
-pytest
-```
-
 All model training is done with Pytorch. Inferences are done with OnnxRuntime.
 
 Use ONNX version `1.16` and onnxruntime version `1.18`.
@@ -31,21 +25,16 @@ Stroke derendering is composed of two main components: Text segmentation and str
 
 To set-up inferencing,
 1. Download the onnx model and configuration files [here](https://drive.google.com/drive/folders/1XbTwFgEDDENve8XuwkHnIYvpSqTnpGTS?usp=drive_link).
-2. In the root directory, run `python main.py --models=<model directory> -input=<input directory> --output=<output directory>` where:
+2. In the root directory, run `python main.py --models=<model dir> -input=<input dir> --output=<output dir>` where:
 
-- `<model directory>`: Path to the downloaded models and configurations folder.
-- `<input directory>`: Path to the folder containing .png images to run inferences on.
-- `<output directory>`: (Optional) Path to the folder where all model outputs will be exported. By default it will save to ./images/output.
-
-## Results
-
-The models were tested on 100 different images of handwritten text in English with ground truth strokes. The testing dataset and results can be found [here](LINK). Different metrics were calculated for both the text segmentation and stroke estimation steps.
+- `<model dir>`: Path to the downloaded models and configurations folder.
+- `<input dir>`: Path to the folder containing .png images to run inferences on.
+- `<output dir>`: (Optional) Path to the folder where all model outputs will be exported. By default it will save to ./images/output.
 
 ## Repository structure
 
 Submodule | Description
 :--------:|:-----------
-data | Processes offline-to-online images into training data for each model.
 models | Pytorch and onnx methods for loading data, training models, and running inferences.
 helper | Helper functions for all methods.
 
