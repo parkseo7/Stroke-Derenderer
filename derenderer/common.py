@@ -24,11 +24,14 @@ def load_image(img_filepath, grayscale=False):
     return image
 
 
-def save_image(img, save_filepath):
+def save_image(img, save_filepath, grayscale=False):
     """Saves a colored image into a .png file.
     """
 
-    cv2.imwrite(save_filepath, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    if grayscale:
+        cv2.imwrite(save_filepath, cv2.cvtColor(img, cv2.COLOR_GRAY2BGR))
+    else:
+        cv2.imwrite(save_filepath, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
 
 def save_metrics(metrics, filename):

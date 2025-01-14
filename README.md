@@ -6,7 +6,7 @@ Stroke derendering is an advanced handwriting recognition task that converts off
 
 ## Installation
 
-Run the following commands in the repository's base directory to install using `setup.py`.
+To install using Anaconda, run the following commands in the repository's base directory to install using `setup.py`.
 
 ```
 conda create --name myenv
@@ -29,7 +29,13 @@ Use ONNX version `1.16` and onnxruntime version `1.18`.
 
 Stroke derendering is composed of two main components: Text segmentation and stroke estimation.
 
-To run inferences, download the onnx model files [here](LINK).
+To set-up inferencing,
+1. Download the onnx model and configuration files [here](LINK).
+2. In the root directory, run `python main.py --models=<model directory> -input=<input directory> --output=<output directory>` where:
+
+- `<model directory>`: Path to the downloaded models and configurations folder.
+- `<input directory>`: Path to the folder containing .png images to run inferences on.
+- `<output directory>`: (Optional) Path to the folder where all model outputs will be exported. By default it will save to ./images/output.
 
 ## Results
 
@@ -39,8 +45,7 @@ The models were tested on 100 different images of handwritten text in English wi
 
 Submodule | Description
 :--------:|:-----------
-config | Configuration `.sh` files and `.yaml` files.
-data | Processes and exports usable offline and online strokes for training.
+data | Processes offline-to-online images into training data for each model.
 models | Pytorch and onnx methods for loading data, training models, and running inferences.
 helper | Helper functions for all methods.
 
