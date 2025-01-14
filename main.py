@@ -19,7 +19,7 @@ from derenderer.common import (
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-modelspath", "-modelspath", required=True,
+    parser.add_argument("-models", "-models", required=True,
                         help="Path to the folder containing all model files.")
     parser.add_argument("-input", "-input", default="./images/input",
                         help="Path to the folder containing all input images.")
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     imgs = load_images(img_filepaths)
 
     # Initialize models:
-    modelpath = vargs.modelspath
+    modelpath = vargs.models
     bs, ort_bs, se, orts_se = initialize_sessions(modelpath)
 
     # Get inferences for every image:
