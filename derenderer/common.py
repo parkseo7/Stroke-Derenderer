@@ -5,6 +5,7 @@ import pickle
 import yaml
 import json
 import cv2
+import onnxruntime
 
 EPS = 1e-6
 
@@ -23,11 +24,14 @@ def load_image(img_filepath, grayscale=False):
     return image
 
 
-def save_image(img, save_filepath):
+def save_image(img, save_filepath, grayscale=False):
     """Saves a colored image into a .png file.
     """
 
-    cv2.imwrite(save_filepath, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    if grayscale:
+        cv2.imwrite(save_filepath, cv2.cvtColor(img, cv2.COLOR_GRAY2BGR))
+    else:
+        cv2.imwrite(save_filepath, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
 
 def save_metrics(metrics, filename):
@@ -96,3 +100,12 @@ def normalize_image(image):
     normalized_image = cv2.normalize(image, None, 0, 255, 
                                      norm_type=cv2.NORM_MINMAX)
     return normalized_image
+
+
+def init_onnx_session(onnx_path):
+    """Start an ONNX inference, for testing.
+    """
+
+    providers = ['CPUExecutionProvider']
+    ort = onnxruntime.InferenceSession(onnx_path, providers=providers)
+    return ort
