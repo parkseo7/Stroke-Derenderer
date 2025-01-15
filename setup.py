@@ -13,7 +13,7 @@ setup(
         'License :: Other/Proprietary License',
     ],
     install_requires=[
-        'numpy',
+        'numpy<2.0', # To resolve version conflict
         'pandas',
         'scipy',
         'opencv-python',
@@ -21,6 +21,7 @@ setup(
         'matplotlib',
         'pillow',
         'scikit-image',
+        'pyyaml',
         'torch',
         'torchvision',
         'svgpathtools',

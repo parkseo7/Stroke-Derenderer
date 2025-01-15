@@ -31,16 +31,31 @@ To set-up inferencing,
 - `<input dir>`: Path to the folder containing .png images to run inferences on.
 - `<output dir>`: (Optional) Path to the folder where all model outputs will be exported. By default it will save to ./images/output.
 
-## Repository structure
+For each input image, a binarized .png image and strokes .json file will be outputted. We can plot the results with the following example code:
+```
+import matplotlib.pyplot as plt
+from derenderer.common import load_image, load_json
 
-Submodule | Description
-:--------:|:-----------
-models | Pytorch and onnx methods for loading data, training models, and running inferences.
-helper | Helper functions for all methods.
+img = load_image("./path/to/image")
+strokes = load_json("./path/to/strokes")
+
+plt.imshow(img)
+for (X, Y) in strokes:
+    plt.plot(X, Y)
+```
+
+Below are some inference examples of the text segmentation and estimated strokes.
+![alt text](./plot/plot1.png "sample line")
+![alt text](./plot/plot2.png "sample line 2")
+
 
 ##  Outline of methodology
 
-Text segmentation works by applying the UNet model with attention onto images of fixed height and variable width.
+Text segmentation works by applying the [UNet model with attention](https://github.com/namdvt/skeletonization) onto images of fixed height and variable width.
 The image is resized and partitioned into padded subimages of height 128px and width 384px. The model binarizes the subimages individually, then the subimages are glued to obtain the output of the original image.
 
-Stroke estimation works by applying a vision language model onto a binary image containing only text. The image is partitioned into character-sized subimages by isolating each connected binary island, then clustering nearby islands together. The stroke estimation model is applied to each subimage, a 224px by 224px binary image. The strokes are then rescaled and translated to align with the original image.
+![alt text](./plot/binarization.png "binarization")
+
+Stroke estimation works by applying a [vision language model](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captioning) onto a binary image containing only text, which is provided by the processed image from the text segmentation model. The image is partitioned into character-sized subimages by isolating each connected binary island, then clustering nearby islands together. The stroke estimation model is applied to each subimage, a 224px by 224px binary image. The strokes are then rescaled and translated to align with the original image.
+
+![alt text](./plot/stroke_estimation.png "binarization")
