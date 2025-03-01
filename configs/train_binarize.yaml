@@ -1,0 +1,35 @@
+directories:
+  model: ./output/models
+  data: /home/daniel/nas_data/binarization_128
+
+# DDP set-up
+visible_devices: [1, 2]
+num_devices: 2
+
+model:
+  name: binarize_128
+  version: 1
+  height: 128 # Height of image
+  width: 384 # Pad width of image
+  init_features: 32 # More features = larger model
+  train:
+    batch_size: 16
+    num_workers: 8
+    epochs: 20
+    peak_lr: 0.007
+    base_lr: 0.0005 # Near 0
+    decay_lr: 0.001
+    peak_epoch: 5
+    grad_clip: 5.0
+    save_per_epoch: 2
+  
+  # Optional .pt checkpoint. Make sure features are the same
+  checkpoint:
+
+dataset:
+  label_folder: skeleton
+  train_batches:
+    CN_pencil_001_010: [original, augmented]
+
+  val_batches:
+    CN_pencil_011_020: [original, augmented]

@@ -1,0 +1,114 @@
+directories:
+  model: ./output/models
+  data: /home/daniel/nas_data/strokes_resnet_224
+
+# DDP set-up
+visible_devices: [1]
+num_devices: 1
+
+model:
+  name: SE_SHUFFLENET
+  version: 1
+
+  encoder: "shufflenet"
+  encoder_checkpoint:
+  # decoder_checkpoint: ./output/models/SE_RESNET/models/SE_RESNET_04/SE_RESNET_04_decoder_020.pt
+
+  parameters:
+    encoded_image_size: 14 # Adaptive average pool to (14, 14)
+    attention_dim: 1024 # 512
+    embed_dim: 768 # 512
+    decoder_dim: 1024 # 512
+    vocab_size: 451 # 224 + 224 + 3
+    dropout: 0.5
+  
+  train:
+    batch_size: 16
+    num_workers: 8
+    epochs: 20
+    encoder_lr: 0.00001 # Base LR
+    decoder_lr: 0.00004 # Base LR
+    encoder_peak_lr: 0.0001
+    decoder_peak_lr: 0.0004
+    encoder_decay_lr: 0.00001 # Back to base LR
+    decoder_decay_lr: 0.00004 # Back to base LR
+    peak_epoch: 5
+    alpha_c: 1.0
+    grad_clip: 5.0
+    save_per_epoch: 1
+
+dataset:
+  train_batches:
+    CN_pencil_001_010: [skeleton]
+
+  val_batches:
+    CN_pencil_021_030: [skeleton]
+
+dataset0:
+  train_batches:
+    CN_pencil_001_010: [skeleton]
+    CN_pencil_011_020: [skeleton]
+    CN_pencil_021_030: [skeleton]
+    CN_pencil_031_040: [skeleton]
+    CN_pencil_041_050: [skeleton]
+    CN_pencil_051_060: [skeleton]
+    CN_pencil_061_070: [skeleton]
+    CN_pencil_071_080: [skeleton]
+    CN_pencil_081_090: [skeleton]
+    CN_pencil_091_100: [skeleton]
+    CN_pencil_101_110: [skeleton]
+    CN_pencil_111_120: [skeleton]
+    CN_pencil_121_130: [skeleton]
+    CN_pencil_131_140: [skeleton]
+    CN_pencil_141_150: [skeleton]
+    CN_pencil_151_160: [skeleton]
+    CN_pencil_161_170: [skeleton]
+    CN_pencil_171_180: [skeleton]
+    CN_pencil_181_190: [skeleton]
+    CN_pencil_191_200: [skeleton]
+    CN_pencil_201_210: [skeleton]
+    CN_pencil_211_220: [skeleton]
+    CN_pencil_221_230: [skeleton]
+    CN_pencil_231_240: [skeleton]
+    CN_pencil_241_250: [skeleton]
+    CN_pencil_251_260: [skeleton]
+    CN_pencil_261_270: [skeleton]
+    CN_pencil_281_290: [skeleton]
+    CN_pencil_291_300: [skeleton]
+    CN_pencil_301_310: [skeleton]
+    tanzil_chalk_1000: [skeleton]
+    tanzil_chalk_2000: [skeleton]
+    tanzil_chalk_3000: [skeleton]
+    tanzil_chalk_4000: [skeleton]
+    tanzil_chalk_5000: [skeleton]
+    tanzil_chalk_6000: [skeleton]
+    tanzil_chalk_7000: [skeleton]
+    tanzil_chalk_8000: [skeleton]
+    tanzil_chalk_9000: [skeleton]
+    tanzil_chalk_10000: [skeleton]
+    tanzil_chalk_11000: [skeleton]
+    tanzil_pen_cil_1000: [skeleton]
+    tanzil_pen_cil_2000: [skeleton]
+    tanzil_pen_cil_3000: [skeleton]
+    tanzil_pen_cil_4000: [skeleton]
+    tanzil_pen_cil_5000: [skeleton]
+    tanzil_pen_cil_6000: [skeleton]
+    tanzil_pen_cil_7000: [skeleton]
+
+  val_batches:
+    CN_pencil_311_320: [skeleton]
+    CN_pencil_321_330: [skeleton]
+    CN_pencil_331_340: [skeleton]
+    CN_pencil_341_350: [skeleton]
+    CN_pencil_351_360: [skeleton]
+    CN_pencil_361_370: [skeleton]
+    CN_pencil_371_380: [skeleton]
+    CN_pencil_381_390: [skeleton]
+    CN_pencil_391_400: [skeleton]
+    tanzil_chalk_12000: [skeleton]
+    tanzil_chalk_13000: [skeleton]
+    tanzil_chalk_14000: [skeleton]
+    tanzil_chalk_15000: [skeleton]
+    tanzil_pen_cil_8000: [skeleton]
+    tanzil_pen_cil_9000: [skeleton]
+    tanzil_pen_cil_10000: [skeleton]
