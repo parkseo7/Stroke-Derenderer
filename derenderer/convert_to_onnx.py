@@ -6,8 +6,8 @@ import numpy as np
 import time
 from pathlib import Path
 
-from derenderer.convert_bin_to_onnx import BinarizationModel
-from derenderer.convert_se_to_onnx import EncoderOnnx, DecoderOnnx
+from derenderer.onnx_binarize import BinarizationModel
+from derenderer.onnx_strokes import EncoderOnnx, DecoderOnnx
 from derenderer.common import load_metrics, save_json
 
 
