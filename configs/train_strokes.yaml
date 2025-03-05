@@ -1,50 +1,46 @@
 directories:
+  # Local folder
   model: ./output/models
+  # Volume directory for data. /data-sunia-gpu/danielp/npi_data/binarization_128
   data: /home/daniel/nas_data/strokes_resnet_224
 
-# DDP set-up
-visible_devices: [1]
-num_devices: 1
+# DDP set-up, choosing GPUs to train with
+visible_devices: [4, 5]
+num_devices: 2
 
 model:
-  name: SE_SHUFFLENET
-  version: 1
-
-  encoder: "shufflenet"
-  encoder_checkpoint:
+  name: SE_EFFICIENTNET
+  version: 6
+  encoder: "efficientnet"
+  # encoder_checkpoint:
   # decoder_checkpoint: ./output/models/SE_RESNET/models/SE_RESNET_04/SE_RESNET_04_decoder_020.pt
 
   parameters:
     encoded_image_size: 14 # Adaptive average pool to (14, 14)
-    attention_dim: 1024 # 512
-    embed_dim: 768 # 512
-    decoder_dim: 1024 # 512
+    attention_dim: 512 # 512
+    embed_dim: 512 # 512
+    encoder_dim: 512
+    decoder_dim: 512 # 512
     vocab_size: 451 # 224 + 224 + 3
     dropout: 0.5
   
   train:
-    batch_size: 16
+    batch_size: 32
     num_workers: 8
-    epochs: 20
+    epochs: 25
+    start_epoch: 0 # Start at this epoch in case training was disrupted.
     encoder_lr: 0.00001 # Base LR
     decoder_lr: 0.00004 # Base LR
     encoder_peak_lr: 0.0001
     decoder_peak_lr: 0.0004
     encoder_decay_lr: 0.00001 # Back to base LR
     decoder_decay_lr: 0.00004 # Back to base LR
-    peak_epoch: 5
+    peak_epoch: 5 # Epoch at which the LR is highest.
     alpha_c: 1.0
     grad_clip: 5.0
     save_per_epoch: 1
 
 dataset:
-  train_batches:
-    CN_pencil_001_010: [skeleton]
-
-  val_batches:
-    CN_pencil_021_030: [skeleton]
-
-dataset0:
   train_batches:
     CN_pencil_001_010: [skeleton]
     CN_pencil_011_020: [skeleton]
@@ -94,6 +90,96 @@ dataset0:
     tanzil_pen_cil_5000: [skeleton]
     tanzil_pen_cil_6000: [skeleton]
     tanzil_pen_cil_7000: [skeleton]
+    IAM_en_lines_00: [skeleton]
+    IAM_en_lines_01: [skeleton]
+    IAM_en_lines_02: [skeleton]
+    IAM_en_lines_03: [skeleton]
+    IAM_en_lines_04: [skeleton]
+    IAM_en_lines_05: [skeleton]
+    IAM_en_lines_06: [skeleton]
+    IAM_en_lines_07: [skeleton]
+    IAM_en_lines_08: [skeleton]
+    IAM_en_lines_09: [skeleton]
+    harbin_000: [skeleton]
+    harbin_001: [skeleton]
+    harbin_002: [skeleton]
+    harbin_003: [skeleton]
+    harbin_004: [skeleton]
+    harbin_005: [skeleton]
+    harbin_006: [skeleton]
+    harbin_007: [skeleton]
+    harbin_008: [skeleton]
+    harbin_009: [skeleton]
+    harbin_010: [skeleton]
+    harbin_011: [skeleton]
+    harbin_012: [skeleton]
+    harbin_013: [skeleton]
+    harbin_014: [skeleton]
+    harbin_015: [skeleton]
+    harbin_016: [skeleton]
+    harbin_017: [skeleton]
+    harbin_018: [skeleton]
+    harbin_019: [skeleton]
+    harbin_020: [skeleton]
+    harbin_021: [skeleton]
+    harbin_022: [skeleton]
+    harbin_023: [skeleton]
+    harbin_024: [skeleton]
+    harbin_025: [skeleton]
+    harbin_026: [skeleton]
+    harbin_027: [skeleton]
+    harbin_028: [skeleton]
+    harbin_029: [skeleton]
+    harbin_030: [skeleton]
+    harbin_031: [skeleton]
+    harbin_032: [skeleton]
+    harbin_033: [skeleton]
+    harbin_034: [skeleton]
+    harbin_035: [skeleton]
+    harbin_036: [skeleton]
+    harbin_037: [skeleton]
+    harbin_038: [skeleton]
+    harbin_039: [skeleton]
+    harbin_040: [skeleton]
+    harbin_041: [skeleton]
+    harbin_042: [skeleton]
+    harbin_043: [skeleton]
+    harbin_044: [skeleton]
+    harbin_045: [skeleton]
+    harbin_046: [skeleton]
+    harbin_047: [skeleton]
+    harbin_048: [skeleton]
+    harbin_049: [skeleton]
+    harbin_050: [skeleton]
+    harbin_051: [skeleton]
+    harbin_052: [skeleton]
+    harbin_053: [skeleton]
+    harbin_054: [skeleton]
+    harbin_055: [skeleton]
+    harbin_056: [skeleton]
+    harbin_057: [skeleton]
+    harbin_058: [skeleton]
+    harbin_059: [skeleton]
+    harbin_060: [skeleton]
+    harbin_061: [skeleton]
+    harbin_062: [skeleton]
+    harbin_063: [skeleton]
+    harbin_064: [skeleton]
+    harbin_065: [skeleton]
+    harbin_066: [skeleton]
+    harbin_067: [skeleton]
+    harbin_068: [skeleton]
+    harbin_069: [skeleton]
+    harbin_070: [skeleton]
+    harbin_071: [skeleton]
+    harbin_072: [skeleton]
+    harbin_073: [skeleton]
+    harbin_074: [skeleton]
+    harbin_075: [skeleton]
+    harbin_076: [skeleton]
+    harbin_077: [skeleton]
+    harbin_078: [skeleton]
+    harbin_079: [skeleton]
 
   val_batches:
     CN_pencil_311_320: [skeleton]
@@ -112,3 +198,25 @@ dataset0:
     tanzil_pen_cil_8000: [skeleton]
     tanzil_pen_cil_9000: [skeleton]
     tanzil_pen_cil_10000: [skeleton]
+    IAM_en_lines_10: [skeleton]
+    IAM_en_lines_11: [skeleton]
+    harbin_080: [skeleton]
+    harbin_081: [skeleton]
+    harbin_082: [skeleton]
+    harbin_083: [skeleton]
+    harbin_084: [skeleton]
+    harbin_085: [skeleton]
+    harbin_086: [skeleton]
+    harbin_087: [skeleton]
+    harbin_088: [skeleton]
+    harbin_089: [skeleton]
+    harbin_090: [skeleton]
+    harbin_091: [skeleton]
+    harbin_092: [skeleton]
+    harbin_093: [skeleton]
+    harbin_094: [skeleton]
+    harbin_095: [skeleton]
+    harbin_096: [skeleton]
+    harbin_097: [skeleton]
+    harbin_098: [skeleton]
+    harbin_099: [skeleton]
